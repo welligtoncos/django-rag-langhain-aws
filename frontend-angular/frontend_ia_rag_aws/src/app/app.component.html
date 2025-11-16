@@ -1,0 +1,86 @@
+<div class="chat-container">
+  <!-- Header -->
+  <div class="chat-header">
+    <h1>🛍️ Assistente de Produtos</h1>
+    <p>Powered by RAG + Claude</p>
+  </div>
+
+  <!-- Messages Area -->
+  <div class="chat-messages">
+    <!-- Welcome Message -->
+    <div *ngIf="showWelcome" class="welcome-screen">
+      <h2>👋 Olá! Como posso ajudar?</h2>
+      <p>Pergunte sobre produtos, preços, promoções...</p>
+      
+      <div class="suggestions">
+        <button 
+          *ngFor="let suggestion of suggestions"
+          class="suggestion-chip"
+          (click)="sendMessage(suggestion)">
+          {{ suggestion }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div *ngFor="let message of messages" 
+         [class]="'message ' + message.type">
+      <div class="message-content">
+        <div class="message-text">{{ message.content }}</div>
+
+        <!-- Products Grid -->
+        <div *ngIf="message.produtos && message.produtos.length > 0" 
+             class="products-grid">
+          <div *ngFor="let produto of message.produtos" class="product-card">
+            <strong>{{ produto.nome }}</strong>
+            
+            <div class="product-price">
+              <span *ngIf="produto.preco_promocional" class="original-price">
+                R$ {{ produto.preco.toFixed(2) }}
+              </span>
+              <span class="current-price">
+                R$ {{ (produto.preco_promocional || produto.preco).toFixed(2) }}
+              </span>
+            </div>
+
+            <div class="product-info">
+              <span>⭐ {{ produto.avaliacao || 'N/A' }}</span>
+              <span>📦 {{ produto.estoque }} un.</span>
+            </div>
+
+            <div class="product-score">
+              Relevância: {{ (produto.score * 100).toFixed(0) }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div *ngIf="isLoading" class="message assistant">
+      <div class="typing-indicator">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="chat-input-container">
+    <input
+      type="text"
+      class="chat-input"
+      placeholder="Digite sua mensagem..."
+      [(ngModel)]="inputMessage"
+      (keypress)="onKeyPress($event)"
+      [disabled]="isLoading"
+    />
+    <button
+      class="send-button"
+      (click)="sendMessage()"
+      [disabled]="isLoading || !inputMessage.trim()">
+      {{ isLoading ? '...' : 'Enviar' }}
+    </button>
+  </div>
+</div>

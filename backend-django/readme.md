@@ -4,6 +4,10 @@ python -m venv venv
 # Ativar o ambiente virtual
 # No Windows:
 venv\Scripts\activate
+
+
+deactivate
+
 # No Linux/Mac:
 source venv/bin/activate
 
