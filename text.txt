@@ -1,0 +1,72 @@
+python manage.py shell
+
+from meu_app_rag.models import Produto
+
+produtos = [
+    Produto(
+        nome="Sandália Feminina Conforto",
+        categoria="Calçados",
+        descricao="Sandália preta confortável para uso diário",
+        preco=79.90,
+        marca="Comfort Plus",
+        cor="Preto",
+        tamanho="37",
+        estoque=50,
+        avaliacao=4.5,
+        num_avaliacoes=120
+    ),
+    Produto(
+        nome="Sandália Rasteira Dourada",
+        categoria="Calçados",
+        descricao="Rasteira leve e macia para o verão",
+        preco=59.90,
+        marca="BeachStyle",
+        cor="Dourado",
+        tamanho="38",
+        estoque=35,
+        avaliacao=4.3,
+        num_avaliacoes=85
+    ),
+    Produto(
+        nome="Tênis Corrida Pro Run",
+        categoria="Calçados",
+        descricao="Tênis leve e respirável para corrida",
+        preco=199.90,
+        preco_promocional=149.90,
+        marca="SportPro",
+        cor="Branco/Azul",
+        tamanho="42",
+        estoque=30,
+        avaliacao=4.8,
+        num_avaliacoes=250
+    ),
+    Produto(
+        nome="Camiseta Básica Algodão",
+        categoria="Roupas",
+        descricao="Camiseta 100% algodão, confortável e durável",
+        preco=39.90,
+        marca="BasicWear",
+        cor="Branca",
+        tamanho="M",
+        estoque=100,
+        avaliacao=4.3,
+        num_avaliacoes=80
+    ),
+    Produto(
+        nome="Óculos de Sol Aviador",
+        categoria="Acessórios",
+        descricao="Óculos estilo aviador com proteção UV",
+        preco=89.90,
+        marca="SunStyle",
+        cor="Preto",
+        estoque=25,
+        avaliacao=4.6,
+        num_avaliacoes=150
+    ),
+]
+
+for p in produtos:
+    p.save()
+    print(f"✅ {p.nome} adicionado")
+
+exit()
