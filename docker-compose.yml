@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Backend Django
+  backend:
+    build:
+      context: ./backend-django
+      dockerfile: Dockerfile
+    container_name: django_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend-django:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - DATABASE_URL=postgresql://user:password@db:5432/dbname
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # Frontend Angular
+  frontend:
+    build:
+      context: ./frontend-angular/frontend_ia_rag_aws
+      dockerfile: Dockerfile
+    container_name: angular_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+  
+networks:
+  app-network:
+    driver: bridge

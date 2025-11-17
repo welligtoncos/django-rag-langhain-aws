@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    image: python:3.11-slim
+    container_name: django_backend_dev
+    working_dir: /app/my_project_ia_rag_aws
+    command: >
+      sh -c "apt-get update && 
+             apt-get install -y gcc g++ postgresql-client && 
+             pip install --upgrade pip && 
+             pip install --no-cache-dir -r requirements.txt && 
+             python manage.py migrate --noinput && 
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend-django:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DEBUG=${DEBUG:-1}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-*}
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
+      # AWS Credentials (carregadas do .env)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: node:18-alpine
+    container_name: angular_frontend_dev
+    working_dir: /app
+    command: sh -c "npm install && npm start -- --host 0.0.0.0 --disable-host-check"
+    volumes:
+      - ./frontend-angular:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "4200:4200"
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=4096
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  node_modules:
+
+networks:
+  app-network:
+    driver: bridge

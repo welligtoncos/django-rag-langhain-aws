@@ -1,0 +1,13 @@
+{
+  "name": "django-rag-angular",
+  "version": "1.0.0",
+  "scripts": {
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:prod": "docker-compose up -d",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v"
+  }
+}
