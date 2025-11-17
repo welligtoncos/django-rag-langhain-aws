@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',  // URL RELATIVA para usar o proxy do Nginx
+  apiUrl: '/api',
   appName: 'RAG System',
   version: '1.0.0'
 };
