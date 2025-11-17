@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface RAGQuery {
   query: string;
@@ -32,9 +33,11 @@ export interface RAGResponse {
   providedIn: 'root'
 })
 export class RagService {
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = environment.apiUrl; // Usa a variável do environment
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    console.log('API URL:', this.apiUrl); // Para debug
+  }
 
   query(data: RAGQuery): Observable<RAGResponse> {
     return this.http.post<RAGResponse>(`${this.apiUrl}/rag/query/`, data);

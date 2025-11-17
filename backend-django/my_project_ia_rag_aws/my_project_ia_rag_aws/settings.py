@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,8 +26,8 @@ SECRET_KEY = 'django-insecure-gz&r^km)6)@%9q^t#jr@-)k-o1!uai!^5nv-+8e*65(&u9uaf0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+# ALLOWED_HOSTS
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Application definition
 
@@ -69,8 +70,13 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "http://54.163.220.235",
+    "http://54.163.220.235:4200",
+    "http://ec2-54-163-220-235.compute-1.amazonaws.com",
+    "http://ec2-54-163-220-235.compute-1.amazonaws.com:4200",
 ]
-
+ 
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('DEBUG', '0') == '1'  # Apenas em dev
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'my_project_ia_rag_aws.urls'

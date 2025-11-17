@@ -7,7 +7,7 @@ services:
     working_dir: /app/my_project_ia_rag_aws
     command: >
       sh -c "apt-get update && 
-             apt-get install -y gcc g++ postgresql-client && 
+             apt-get install -y gcc g++ postgresql-client curl && 
              pip install --upgrade pip && 
              pip install --no-cache-dir -r requirements.txt && 
              python manage.py migrate --noinput && 
@@ -19,10 +19,9 @@ services:
     env_file:
       - .env
     environment:
-      - DEBUG=${DEBUG:-1}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-*}
-      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
-      # AWS Credentials (carregadas do .env)
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,*
+      - PYTHONUNBUFFERED=1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
@@ -48,6 +47,7 @@ services:
       - "4200:4200"
     environment:
       - NODE_OPTIONS=--max-old-space-size=4096
+      - NODE_ENV=development
     depends_on:
       - backend
     networks:

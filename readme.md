@@ -10,6 +10,18 @@ docker-compose -f docker-compose.dev.yml up
 # Backend: http://localhost:8000
 
 
+----------------------------------------------------
+# Build e iniciar em modo produção
+docker-compose up --build -d
+
+# Frontend: http://localhost
+# Backend: http://localhost:8000
+
+# Ver logs
+docker-compose logs -f
+
+# Parar containers
+docker-compose down
 
 # Build e iniciar em modo produção
 docker-compose up --build -d
@@ -23,21 +35,7 @@ docker-compose logs -f
 # Parar containers
 docker-compose down
 
-
-
-# Build e iniciar em modo produção
-docker-compose up --build -d
-
-# Frontend: http://localhost
-# Backend: http://localhost:8000
-
-# Ver logs
-docker-compose logs -f
-
-# Parar containers
-docker-compose down
-
-
+--------------------------------------------------------------------------
 
 # Rebuild apenas o frontend
 docker-compose build frontend
@@ -67,7 +65,7 @@ django-rag-langhain-aws/
 ├── docker-compose.dev.yml
 └── package.json (opcional)
 
-
+--------------------------------------------------
 # Ver logs em tempo real
 docker-compose -f docker-compose.dev.yml logs -f
 
@@ -79,3 +77,4 @@ docker-compose -f docker-compose.dev.yml restart
 
 # Ver containers rodando
 docker ps
+---------------------------------------------------
