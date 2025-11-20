@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
-
+    
 # Copia e instala dependências Python
 COPY my_project_ia_rag_aws/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

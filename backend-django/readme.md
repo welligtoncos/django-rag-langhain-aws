@@ -78,3 +78,15 @@ Arquivos gerados:
   - C:\projects-github\django-rag-langhain-aws\my_project_ia_rag_aws\db_data\vectors.pkl
 
 (venv) PS C:\projects-github\django-rag-langhain-aws\my_project_ia_rag_aws> 
+
+
+# 1. Substituir o arquivo models.py pela versão corrigida
+
+# 2. Criar migration
+python manage.py makemigrations
+
+# 3. Aplicar migration
+python manage.py migrate
+
+# 4. Testar
+python manage.py runserver
