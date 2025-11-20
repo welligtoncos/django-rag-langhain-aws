@@ -27,8 +27,12 @@ SECRET_KEY = 'django-insecure-gz&r^km)6)@%9q^t#jr@-)k-o1!uai!^5nv-+8e*65(&u9uaf0
 DEBUG = True
 
 # ALLOWED_HOSTS
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '18.204.231.197'  # IP público da EC2
+    #'*',  # ⚠️ Apenas para desenvolvimento! Remova em produção
+]
 # Application definition
 
 INSTALLED_APPS = [
