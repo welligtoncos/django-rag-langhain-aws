@@ -1,72 +1,67 @@
+version: '3.8'
+
 services:
   backend:
     image: python:3.11-slim
     container_name: django_backend_prod
     working_dir: /app/my_project_ia_rag_aws
+    command: >
+      sh -c "apt-get update && 
+             apt-get install -y gcc g++ postgresql-client curl && 
+             pip install --upgrade pip && 
+             pip install --no-cache-dir -r requirements.txt && 
+             python manage.py migrate --noinput && 
+             python manage.py collectstatic --noinput && 
+             gunicorn my_project_ia_rag_aws.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
     volumes:
       - ./backend-django:/app
-      - static_volume:/app/my_project_ia_rag_aws/staticfiles
-      - media_volume:/app/my_project_ia_rag_aws/media
-      - rag_data:/app/my_project_ia_rag_aws/db_data
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
     expose:
       - "8000"
     env_file:
       - .env
     environment:
-      - DEBUG=0
-      - SECRET_KEY=django-insecure-gz&r^km)6)@%9q^t#jr@-)k-o1!uai!^5nv-+8e*65(&u9uaf0
-      - DJANGO_ALLOWED_HOSTS=18.204.231.197,54.163.220.235,localhost,127.0.0.1,*
+      - DEBUG=${DEBUG:-0}
+      - DJANGO_ALLOWED_HOSTS=54.163.220.235,ec2-54-163-220-235.compute-1.amazonaws.com,backend,localhost
       - PYTHONUNBUFFERED=1
-      - BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
-      - BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v2:0
-      - MAX_TOKENS=4096
-      - TEMPERATURE=0.7
-      - TOP_P=0.9
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/rag/stats/ || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 120s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
-    command: >
-      sh -c "
-      apt-get update &&
-      apt-get install -y gcc g++ curl wget postgresql-client &&
-      pip install --upgrade pip &&
-      pip install --no-cache-dir -r /app/requirements.txt &&
-      cd /app/my_project_ia_rag_aws &&
-      python manage.py migrate --noinput &&
-      python manage.py collectstatic --noinput --clear &&
-      if [ ! -f db_data/vectors.pkl ]; then
-        echo '🧠 Gerando embeddings...';
-        python manage.py popular_embeddings --force || echo '⚠️ Erro ao gerar embeddings';
-      fi &&
-      echo '✅ Backend iniciado!' &&
-      gunicorn my_project_ia_rag_aws.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --access-logfile - --error-logfile -
-      "
 
   frontend:
     image: nginx:alpine
     container_name: angular_frontend_prod
     volumes:
+      # CORRIJA O CAMINHO - verifique o nome do seu projeto 
       - ./frontend-angular/dist/frontend_ia_rag_aws/browser:/usr/share/nginx/html:ro
       - ./frontend-angular/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "80:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - app-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   static_volume:
   media_volume:
-  rag_data:
 
 networks:
   app-network:
