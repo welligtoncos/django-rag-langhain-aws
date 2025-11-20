@@ -70,10 +70,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
-    "http://54.163.220.235",
-    "http://54.163.220.235:4200",
-    "http://ec2-54-163-220-235.compute-1.amazonaws.com",
-    "http://ec2-54-163-220-235.compute-1.amazonaws.com:4200",
+    "http://18.204.231.197",
+    "http://18.204.231.197:4200", 
 ]
  
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('DEBUG', '0') == '1'  # Apenas em dev
