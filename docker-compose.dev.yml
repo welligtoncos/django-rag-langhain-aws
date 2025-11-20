@@ -9,11 +9,15 @@ services:
       sh -c "apt-get update && 
              apt-get install -y gcc g++ postgresql-client curl && 
              pip install --upgrade pip && 
-             pip install --no-cache-dir -r requirements.txt && 
+             pip install --no-cache-dir -r /app/requirements.txt && 
              python manage.py migrate --noinput && 
+             python manage.py collectstatic --noinput --clear || true &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend-django:/app
+      - static_volume:/app/my_project_ia_rag_aws/staticfiles
+      - media_volume:/app/my_project_ia_rag_aws/media
+      - rag_data:/app/my_project_ia_rag_aws/db_data
     ports:
       - "8000:8000"
     env_file:
@@ -22,10 +26,17 @@ services:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,*
       - PYTHONUNBUFFERED=1
+      
+      # AWS Credentials
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
       - AWS_REGION=${AWS_REGION:-us-east-1}
+      
+      # Media & Static Files
+      - MEDIA_URL=/media/
+      - STATIC_URL=/static/
+      
     networks:
       - app-network
     healthcheck:
@@ -33,7 +44,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    restart: unless-stopped
 
   frontend:
     image: node:18-alpine
@@ -48,13 +60,19 @@ services:
     environment:
       - NODE_OPTIONS=--max-old-space-size=4096
       - NODE_ENV=development
+      - API_URL=http://backend:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - app-network
+    restart: unless-stopped
 
 volumes:
   node_modules:
+  static_volume:    # 📂 Arquivos estáticos (CSS, JS, admin)
+  media_volume:     # 📸 Imagens de produtos
+  rag_data:         # 🧠 Embeddings (catalogo.pkl, vectors.pkl)
 
 networks:
   app-network:
