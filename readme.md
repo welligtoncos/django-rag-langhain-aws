@@ -77,4 +77,34 @@ docker-compose -f docker-compose.dev.yml restart
 
 # Ver containers rodando
 docker ps
----------------------------------------------------
+--------------------------------------------------- 
+# Subir em produção:
+
+docker-compose up -d
+
+------
+
+# 1. Ver o que tem de diferente
+git status
+
+# 2. Buscar updates do repositório remoto
+git fetch origin
+
+# 3. Resetar para o origin/main (descarta mudanças locais)
+git reset --hard origin/main
+
+# 4. Limpar arquivos não rastreados (se necessário)
+git clean -fd
+
+# 5. Confirmar que está atualizado
+git status
+
+---
+
+docker-compose -f docker-compose.dev.yml up -d
+# Acesso: http://54.163.220.235:4200
+# Precisa ter: apiUrl: 'http://54.163.220.235:8000/api' no environment.development.ts
+
+
+docker-compose up -d
+# Acesso: http://54.163.220.235
