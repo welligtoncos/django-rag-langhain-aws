@@ -1,373 +1,58 @@
-// ============================================
-// VARIÁVEIS
-// ============================================
-
-$primary-color: #667eea;
-$secondary-color: #764ba2;
-$success-color: #2ecc71;
-$danger-color: #e74c3c;
-$warning-color: #f39c12;
-$text-dark: #333;
-$text-light: #666;
-$text-muted: #999;
-$border-color: #e0e0e0;
-$bg-light: #f5f5f5;
-$white: #ffffff;
-
-$gradient-primary: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
-
-// Breakpoints
-$mobile: 768px;
-$tablet: 1024px;
-
-// ============================================
-// CONTAINER PRINCIPAL
-// ============================================
-
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: $white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: white;
 }
 
-// ============================================
-// HEADER
-// ============================================
-
+// Header
 .chat-header {
-  background: $gradient-primary;
-  color: $white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   padding: 20px;
-  position: relative;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-  .header-content {
-    text-align: center;
-  }
+  text-align: center;
 
   h1 {
     margin: 0;
     font-size: 24px;
-    font-weight: 600;
   }
 
   p {
-    margin: 5px 0 10px;
+    margin: 5px 0 0;
     font-size: 12px;
     opacity: 0.9;
   }
-
-  .header-stats {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 10px;
-    font-size: 13px;
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 5px 12px;
-      border-radius: 15px;
-      backdrop-filter: blur(10px);
-
-      .stat-icon {
-        font-size: 14px;
-      }
-
-      &.connected {
-        background: rgba(46, 204, 113, 0.3);
-      }
-
-      &.disconnected {
-        background: rgba(231, 76, 60, 0.3);
-      }
-    }
-  }
-
-  .clear-chat-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: $white;
-    font-size: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s;
-    backdrop-filter: blur(10px);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-  }
 }
 
-// ============================================
-// MESSAGES AREA
-// ============================================
-
+// Messages Area
 .chat-messages {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  background: $bg-light;
-  scroll-behavior: smooth;
-
-  // Scrollbar personalizada
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
-
-    &:hover {
-      background: #999;
-    }
-  }
+  background: #f5f5f5;
 }
-
-// ============================================
-// WELCOME SCREEN
-// ============================================
-
-.welcome-screen {
-  text-align: center;
-  padding: 60px 20px;
-  max-width: 800px;
-  margin: 0 auto;
-
-  .welcome-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  h2 {
-    color: $primary-color;
-    margin-bottom: 10px;
-    font-size: 28px;
-  }
-
-  p {
-    color: $text-muted;
-    margin-bottom: 30px;
-    font-size: 16px;
-  }
-
-  .welcome-features {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-top: 40px;
-
-    .feature-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      color: $text-light;
-      font-size: 14px;
-
-      .feature-icon {
-        font-size: 32px;
-        background: $white;
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-    }
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-// Suggestions
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.suggestion-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: $white;
-  border: 2px solid $primary-color;
-  color: $primary-color;
-  border-radius: 25px;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-size: 14px;
-  font-weight: 500;
-
-  .suggestion-icon {
-    font-size: 18px;
-  }
-
-  &:hover {
-    background: $primary-color;
-    color: $white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-// ============================================
-// MESSAGES
-// ============================================
 
 .message {
   display: flex;
-  gap: 12px;
   margin-bottom: 20px;
   animation: fadeIn 0.3s ease-in;
 
   &.user {
-    flex-direction: row-reverse;
-
-    .message-avatar {
-      background: $gradient-primary;
-    }
+    justify-content: flex-end;
 
     .message-content {
-      background: $gradient-primary;
-      color: $white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
       border-bottom-right-radius: 4px;
     }
-
-    .message-timestamp {
-      color: rgba(255, 255, 255, 0.8);
-    }
   }
 
-  &.assistant {
-    .message-avatar {
-      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-
-    .message-content {
-      background: $white;
-      color: $text-dark;
-      border-bottom-left-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
+  &.assistant .message-content {
+    background: white;
+    color: #333;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
-
-  &.system {
-    justify-content: center;
-
-    .message-avatar {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .message-content {
-      background: #fff3cd;
-      color: #856404;
-      border-left: 4px solid #ffc107;
-      max-width: 80%;
-      text-align: center;
-    }
-
-    &.error-message .message-content {
-      background: #f8d7da;
-      color: #721c24;
-      border-left-color: $danger-color;
-    }
-  }
-}
-
-.message-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.message-content {
-  max-width: 70%;
-  padding: 15px 20px;
-  border-radius: 18px;
-  position: relative;
-}
-
-.message-timestamp {
-  font-size: 10px;
-  color: $text-muted;
-  margin-bottom: 8px;
-  opacity: 0.7;
-}
-
-.message-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
-  word-wrap: break-word;
-  
-  // Estilo para HTML renderizado
-  ::ng-deep {
-    strong {
-      font-weight: 600;
-    }
-
-    em {
-      font-style: italic;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: underline;
-    }
-  }
-}
-
-.processing-time {
-  font-size: 11px;
-  color: $text-muted;
-  margin-top: 8px;
-  opacity: 0.8;
-  font-style: italic;
 }
 
 @keyframes fadeIn {
@@ -381,22 +66,127 @@ $tablet: 1024px;
   }
 }
 
-// ============================================
-// TYPING INDICATOR
-// ============================================
+.message-content {
+  max-width: 70%;
+  padding: 15px 20px;
+  border-radius: 18px;
+}
 
+.message-text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+// Products
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.product-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 15px;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  strong {
+    display: block;
+    color: #667eea;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+}
+
+.product-price {
+  margin: 10px 0;
+
+  .original-price {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 12px;
+    margin-right: 8px;
+  }
+
+  .current-price {
+    color: #2ecc71;
+    font-weight: bold;
+    font-size: 16px;
+  }
+}
+
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.product-score {
+  font-size: 11px;
+  color: #999;
+}
+
+// Welcome
+.welcome-screen {
+  text-align: center;
+  padding: 60px 20px;
+
+  h2 {
+    color: #667eea;
+    margin-bottom: 10px;
+  }
+
+  p {
+    color: #999;
+    margin-bottom: 30px;
+  }
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.suggestion-chip {
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #667eea;
+  color: #667eea;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.05);
+  }
+}
+
+// Typing
 .typing-indicator {
   display: flex;
   gap: 5px;
   padding: 15px 20px;
-  background: $white;
+  background: white;
   border-radius: 18px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 
   span {
     width: 8px;
     height: 8px;
-    background: $primary-color;
+    background: #667eea;
     border-radius: 50%;
     animation: typing 1.4s infinite;
 
@@ -419,618 +209,61 @@ $tablet: 1024px;
   }
 }
 
-// ============================================
-// PRODUCTS SECTION
-// ============================================
-
-.products-section {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-
-  .message.user & {
-    border-top-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .message.assistant & {
-    border-top-color: $border-color;
-  }
-}
-
-.products-header {
-  margin-bottom: 15px;
-
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: inherit;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
-
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 15px;
-}
-
-// ============================================
-// PRODUCT CARD
-// ============================================
-
-.product-card {
-  background: $bg-light;
-  border: 1px solid $border-color;
-  border-radius: 12px;
-  padding: 15px;
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-
-  .message.user & {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: $white;
-
-    .product-name,
-    .product-brand,
-    .product-info,
-    .product-score {
-      color: inherit;
-    }
-  }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  }
-
-  &.tem-promocao {
-    border-color: $warning-color;
-  }
-
-  &.estoque-baixo {
-    border-color: $danger-color;
-  }
-}
-
-// Badges
-.promo-badge,
-.stock-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  z-index: 1;
-  animation: pulse 2s infinite;
-}
-
-.promo-badge {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-  color: $white;
-}
-
-.stock-badge {
-  background: $warning-color;
-  color: $white;
-  top: 40px; // Abaixo da promo badge se houver
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-// Product Image
-.product-image {
-  width: 100%;
-  height: 180px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 12px;
-  background: $white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-  }
-
-  .no-image {
-    font-size: 48px;
-    color: $text-muted;
-  }
-
-  &:hover img {
-    transform: scale(1.05);
-  }
-}
-
-// Product Info
-.product-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: $text-dark;
-  margin-bottom: 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 40px;
-}
-
-.product-brand {
-  font-size: 12px;
-  color: $text-light;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.product-price {
-  margin: 12px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .original-price {
-    text-decoration: line-through;
-    color: $text-muted;
-    font-size: 12px;
-  }
-
-  .current-price {
-    color: $success-color;
-    font-weight: bold;
-    font-size: 18px;
-  }
-}
-
-.product-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 10px 0;
-  font-size: 12px;
-  color: $text-light;
-  gap: 10px;
-
-  .product-rating {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 8px;
-    background: rgba(255, 193, 7, 0.1);
-
-    &.excellent {
-      background: rgba(46, 204, 113, 0.15);
-      color: #27ae60;
-    }
-
-    &.good {
-      background: rgba(52, 152, 219, 0.15);
-      color: #2980b9;
-    }
-
-    &.average {
-      background: rgba(255, 193, 7, 0.15);
-      color: #f39c12;
-    }
-
-    &.poor {
-      background: rgba(231, 76, 60, 0.15);
-      color: #c0392b;
-    }
-  }
-
-  .product-stock {
-    padding: 4px 8px;
-    border-radius: 8px;
-    background: rgba(46, 204, 113, 0.1);
-    color: $success-color;
-
-    &.low-stock {
-      background: rgba(255, 193, 7, 0.15);
-      color: $warning-color;
-      font-weight: 600;
-    }
-  }
-}
-
-// Score Bar
-.product-score {
-  margin: 12px 0 10px;
-
-  .score-bar {
-    height: 4px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 5px;
-
-    .score-fill {
-      height: 100%;
-      background: $gradient-primary;
-      transition: width 0.5s ease-out;
-      animation: fillBar 1s ease-out;
-    }
-  }
-
-  .score-text {
-    font-size: 11px;
-    color: $text-muted;
-  }
-}
-
-@keyframes fillBar {
-  from {
-    width: 0;
-  }
-}
-
-// Product Actions
-.product-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.btn-action {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-
-  &.btn-details {
-    background: rgba(102, 126, 234, 0.1);
-    color: $primary-color;
-    border: 1px solid $primary-color;
-
-    &:hover {
-      background: $primary-color;
-      color: $white;
-    }
-  }
-
-  &.btn-cart {
-    background: $gradient-primary;
-    color: $white;
-
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-}
-
-// ============================================
-// INPUT AREA
-// ============================================
-
+// Input
 .chat-input-container {
   display: flex;
   gap: 10px;
   padding: 20px;
-  background: $white;
-  border-top: 1px solid $border-color;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.input-wrapper {
-  flex: 1;
-  position: relative;
-
-  .input-counter {
-    position: absolute;
-    bottom: 5px;
-    right: 10px;
-    font-size: 10px;
-    color: $text-muted;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2px 6px;
-    border-radius: 8px;
-  }
+  background: white;
+  border-top: 1px solid #e0e0e0;
 }
 
 .chat-input {
-  width: 100%;
+  flex: 1;
   padding: 12px 20px;
-  border: 2px solid $border-color;
+  border: 2px solid #e0e0e0;
   border-radius: 25px;
   font-size: 15px;
-  font-family: inherit;
   outline: none;
-  transition: all 0.3s;
-  resize: none;
-  max-height: 120px;
+  transition: border-color 0.3s;
 
   &:focus {
-    border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #667eea;
   }
 
   &:disabled {
-    background: $bg-light;
+    background: #f5f5f5;
     cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  &::placeholder {
-    color: $text-muted;
   }
 }
 
 .send-button {
   padding: 12px 30px;
-  background: $gradient-primary;
-  color: $white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   border: none;
   border-radius: 25px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: bold;
+  transition: transform 0.2s;
 
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(1.05);
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
   }
 }
 
-// ============================================
-// RESPONSIVE DESIGN
-// ============================================
-
-@media (max-width: $mobile) {
-  .chat-header {
-    padding: 15px;
-
-    h1 {
-      font-size: 20px;
-    }
-
-    .header-stats {
-      flex-direction: column;
-      gap: 8px;
-      font-size: 11px;
-
-      .stat-item {
-        padding: 4px 10px;
-      }
-    }
-
-    .clear-chat-btn {
-      width: 35px;
-      height: 35px;
-      font-size: 16px;
-    }
-  }
-
-  .chat-messages {
-    padding: 15px;
-  }
-
-  .message-content {
-    max-width: 85%;
-  }
-
-  .welcome-screen {
-    padding: 40px 15px;
-
-    .welcome-icon {
-      font-size: 48px;
-    }
-
-    h2 {
-      font-size: 22px;
-    }
-
-    .welcome-features {
-      flex-direction: column;
-      gap: 20px;
-    }
-  }
-
-  .suggestions {
-    flex-direction: column;
-    align-items: stretch;
-
-    .suggestion-chip {
-      justify-content: center;
-    }
-  }
-
+// Responsive
+@media (max-width: 768px) {
   .products-grid {
     grid-template-columns: 1fr;
   }
 
-  .product-card {
-    .product-image {
-      height: 200px;
-    }
-  }
-
-  .chat-input-container {
-    padding: 15px;
-    gap: 8px;
-  }
-
-  .send-button {
-    padding: 12px 20px;
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 480px) {
-  .chat-header {
-    h1 {
-      font-size: 18px;
-    }
-
-    .header-stats {
-      font-size: 10px;
-    }
-  }
-
-  .message-avatar {
-    width: 35px;
-    height: 35px;
-    font-size: 16px;
-  }
-
-  .product-actions {
-    flex-direction: column;
-
-    .btn-action {
-      width: 100%;
-    }
-  }
-}
-
-// ============================================
-// DARK MODE SUPPORT (OPCIONAL)
-// ============================================
-
-@media (prefers-color-scheme: dark) {
-  .chat-container {
-    background: #1a1a1a;
-  }
-
-  .chat-messages {
-    background: #0d0d0d;
-  }
-
-  .message.assistant .message-content {
-    background: #2a2a2a;
-    color: #e0e0e0;
-  }
-
-  .product-card {
-    background: #1a1a1a;
-    border-color: #333;
-    color: #e0e0e0;
-
-    .product-name {
-      color: #e0e0e0;
-    }
-  }
-
-  .product-image {
-    background: #2a2a2a;
-  }
-
-  .chat-input {
-    background: #2a2a2a;
-    border-color: #333;
-    color: #e0e0e0;
-
-    &::placeholder {
-      color: #666;
-    }
-  }
-
-  .chat-input-container {
-    background: #1a1a1a;
-    border-top-color: #333;
-  }
-}
-
-// ============================================
-// UTILITIES
-// ============================================
-
-.text-center {
-  text-align: center;
-}
-
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-
-// ============================================
-// ANIMATIONS
-// ============================================
-
-@keyframes slideInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-// Aplicar animações aos elementos novos
-.message {
-  &.user {
-    animation: slideInRight 0.3s ease-out;
-  }
-
-  &.assistant,
-  &.system {
-    animation: slideInUp 0.3s ease-out;
+  .message-content {
+    max-width: 85%;
   }
 }
