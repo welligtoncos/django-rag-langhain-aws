@@ -1,17 +1,16 @@
 version: '3.8'
-
 services:
   backend:
     image: python:3.11-slim
     container_name: django_backend_dev
     working_dir: /app/my_project_ia_rag_aws
     command: >
-      sh -c "apt-get update && 
-             apt-get install -y gcc g++ postgresql-client curl && 
-             pip install --upgrade pip && 
-             pip install --no-cache-dir -r /app/requirements.txt && 
-             python manage.py migrate --noinput && 
-             python manage.py collectstatic --noinput --clear || true &&
+      sh -c "apt-get update &&
+             apt-get install -y gcc g++ postgresql-client curl &&
+             pip install --upgrade pip &&
+             pip install --no-cache-dir -r requirements.txt &&
+             python manage.py migrate --noinput &&
+             (python manage.py collectstatic --noinput --clear || true) &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend-django:/app
@@ -70,9 +69,9 @@ services:
 
 volumes:
   node_modules:
-  static_volume:    # 📂 Arquivos estáticos (CSS, JS, admin)
-  media_volume:     # 📸 Imagens de produtos
-  rag_data:         # 🧠 Embeddings (catalogo.pkl, vectors.pkl)
+  static_volume:
+  media_volume:
+  rag_data:
 
 networks:
   app-network:

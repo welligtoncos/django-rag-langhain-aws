@@ -108,3 +108,45 @@ docker-compose -f docker-compose.dev.yml up -d
 
 docker-compose up -d
 # Acesso: http://54.163.220.235
+
+
+
+O erro 503 – Serviço RAG indisponível está claríssimo no log do backend:
+
+❌ Arquivo /app/my_project_ia_rag_aws/db_data/vectors.pkl não encontrado.
+Execute: python manage.py popular_embeddings --force
+
+
+👉 Isso significa que o backend está funcionando, mas o RAG não tem embeddings carregados, então ele trava e retorna 503.
+
+✅ Como resolver (Local / Docker)
+✔️ 1. Acesse o container do backend
+
+No terminal:
+
+docker exec -it django_backend_dev bash
+
+✔️ 2. Gere os embeddings
+
+No container, rode:
+
+python manage.py popular_embeddings --force
+
+
+Isso vai:
+
+ler sua base de produtos
+
+criar vectors.pkl
+
+salvar em /app/my_project_ia_rag_aws/db_data/
+
+Se tudo der certo, você verá algo como:
+
+✔️ Embeddings criados com sucesso!
+
+✔️ 3. Reinicie o backend
+
+Ainda no host:
+
+docker compose restart backend

@@ -38,6 +38,4 @@ botocore>=1.34.72,<2.0.0
 
 # Server
 gunicorn==21.2.0
-
-# Para ImageField
-Pillow==10.1.0
+ 
