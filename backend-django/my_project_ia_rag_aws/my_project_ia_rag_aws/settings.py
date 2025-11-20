@@ -30,7 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '18.204.231.197'  # IP público da EC2
+    '98.88.29.237'  # IP público da EC2
     #'*',  # ⚠️ Apenas para desenvolvimento! Remova em produção
 ]
 # Application definition
@@ -74,8 +74,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
-    "http://18.204.231.197",
-    "http://18.204.231.197:4200", 
+    "http://98.88.29.237",
+    "http://98.88.29.237:4200", 
 ]
  
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('DEBUG', '0') == '1'  # Apenas em dev
