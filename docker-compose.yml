@@ -23,7 +23,7 @@ services:
       - .env
     environment:
       - DEBUG=${DEBUG:-0}
-      - DJANGO_ALLOWED_HOSTS=54.163.220.235,ec2-54-163-220-235.compute-1.amazonaws.com,backend,localhost
+      - DJANGO_ALLOWED_HOSTS=18.204.231.197,ec2-18-204-231-197.compute-1.amazonaws.com,backend,localhost
       - PYTHONUNBUFFERED=1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
