@@ -1,6 +1,17 @@
+
 export const environment = {
-  production: true,
-  apiUrl: '/api',
-  appName: 'RAG System',
-  version: '1.0.0'
+  production: false,
+  apiUrl: 'http://localhost:8000/api',  // URL ABSOLUTA para dev
+  appName: 'RAG System - Development',
+  version: '1.0.0-dev',
+  debugMode: true
 };
+
+
+//DESCOMENTAR PARA PRODUÇÃO
+// export const environment = {
+//   production: true,
+//   apiUrl: '/api',
+//   appName: 'RAG System',
+//   version: '1.0.0'
+// };

@@ -1,55 +1,195 @@
 <div class="chat-container">
-  <!-- Header -->
+  
+  <!-- ============================================ -->
+  <!-- HEADER -->
+  <!-- ============================================ -->
   <div class="chat-header">
-    <h1>🛍️ Assistente de Produtos</h1>
-    <p>Powered by RAG + Claude</p>
+    <div class="header-content">
+      <h1>🛍️ Assistente de Produtos</h1>
+      <p>Powered by RAG + Claude Sonnet</p>
+      
+      <div class="header-stats" *ngIf="stats">
+        <span class="stat-item">
+          <span class="stat-icon">📦</span>
+          {{ totalProdutos }} produtos
+        </span>
+        <span class="stat-item">
+          <span class="stat-icon">🏷️</span>
+          {{ categorias.length }} categorias
+        </span>
+        <span class="stat-item" [class.connected]="apiConnected" [class.disconnected]="!apiConnected">
+          <span class="stat-icon">{{ apiConnected ? '🟢' : '🔴' }}</span>
+          {{ apiConnected ? 'Online' : 'Offline' }}
+        </span>
+      </div>
+    </div>
+
+    <button 
+      *ngIf="hasMessages" 
+      class="clear-chat-btn" 
+      (click)="limparChat()"
+      title="Limpar conversa">
+      🗑️
+    </button>
   </div>
 
-  <!-- Messages Area -->
-  <div class="chat-messages">
-    <!-- Welcome Message -->
+  <!-- ============================================ -->
+  <!-- MESSAGES AREA -->
+  <!-- ============================================ -->
+  <div #messagesContainer class="chat-messages">
+    
+    <!-- Welcome Screen -->
     <div *ngIf="showWelcome" class="welcome-screen">
+      <div class="welcome-icon">🤖</div>
       <h2>👋 Olá! Como posso ajudar?</h2>
-      <p>Pergunte sobre produtos, preços, promoções...</p>
+      <p>Pergunte sobre produtos, preços, promoções ou características específicas...</p>
       
       <div class="suggestions">
         <button 
           *ngFor="let suggestion of suggestions"
           class="suggestion-chip"
-          (click)="sendMessage(suggestion)">
-          {{ suggestion }}
+          (click)="sendSuggestion(suggestion.text)"
+          [title]="suggestion.category">
+          <span class="suggestion-icon">{{ suggestion.icon }}</span>
+          <span class="suggestion-text">{{ suggestion.text }}</span>
         </button>
+      </div>
+
+      <div class="welcome-features">
+        <div class="feature-item">
+          <span class="feature-icon">🔍</span>
+          <span>Busca inteligente</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">💰</span>
+          <span>Comparação de preços</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">⭐</span>
+          <span>Avaliações reais</span>
+        </div>
       </div>
     </div>
 
     <!-- Messages -->
     <div *ngFor="let message of messages" 
-         [class]="'message ' + message.type">
+         [class]="'message ' + message.type"
+         [class.error-message]="message.error">
+      
+      <div class="message-avatar">
+        <span *ngIf="message.type === 'user'">👤</span>
+        <span *ngIf="message.type === 'assistant'">🤖</span>
+        <span *ngIf="message.type === 'system'">ℹ️</span>
+      </div>
+
       <div class="message-content">
-        <div class="message-text">{{ message.content }}</div>
+        <!-- Timestamp -->
+        <div class="message-timestamp">
+          {{ message.timestamp | date:'short' }}
+        </div>
+
+        <!-- Content -->
+        <div class="message-text" [innerHTML]="message.content | nl2br"></div>
+
+        <!-- Processing Time -->
+        <div *ngIf="message.tempo_processamento" class="processing-time">
+          ⚡ Processado em {{ formatarTempo(message.tempo_processamento) }}
+        </div>
 
         <!-- Products Grid -->
         <div *ngIf="message.produtos && message.produtos.length > 0" 
-             class="products-grid">
-          <div *ngFor="let produto of message.produtos" class="product-card">
-            <strong>{{ produto.nome }}</strong>
-            
-            <div class="product-price">
-              <span *ngIf="produto.preco_promocional" class="original-price">
-                R$ {{ produto.preco.toFixed(2) }}
-              </span>
-              <span class="current-price">
-                R$ {{ (produto.preco_promocional || produto.preco).toFixed(2) }}
-              </span>
-            </div>
+             class="products-section">
+          
+          <div class="products-header">
+            <h3>📦 {{ message.produtos.length }} Produto(s) Encontrado(s)</h3>
+          </div>
 
-            <div class="product-info">
-              <span>⭐ {{ produto.avaliacao || 'N/A' }}</span>
-              <span>📦 {{ produto.estoque }} un.</span>
-            </div>
+          <div class="products-grid">
+            <div *ngFor="let produto of message.produtos" 
+                 class="product-card"
+                 [class.tem-promocao]="temPromocao(produto)"
+                 [class.estoque-baixo]="estoqueBaixo(produto)">
+              
+              <!-- Badge de Promoção -->
+              <div *ngIf="temPromocao(produto)" class="promo-badge">
+                🔥 {{ calcularDesconto(produto.preco, produto.preco_promocional) }}% OFF
+              </div>
 
-            <div class="product-score">
-              Relevância: {{ (produto.score * 100).toFixed(0) }}%
+              <!-- Badge de Estoque Baixo -->
+              <div *ngIf="estoqueBaixo(produto)" class="stock-badge">
+                ⚠️ Últimas unidades
+              </div>
+
+              <!-- Imagem do Produto -->
+              <div class="product-image">
+                <img 
+                  *ngIf="temImagem(produto)"
+                  [src]="getImagemUrl(produto)" 
+                  [alt]="produto.nome"
+                  (error)="onImageError($event)"
+                  loading="lazy">
+                <div *ngIf="!temImagem(produto)" class="no-image">
+                  📦
+                </div>
+              </div>
+
+              <!-- Nome -->
+              <div class="product-name" [title]="produto.nome">
+                {{ produto.nome }}
+              </div>
+
+              <!-- Marca -->
+              <div *ngIf="produto.marca" class="product-brand">
+                🏷️ {{ produto.marca }}
+              </div>
+
+              <!-- Preço -->
+              <div class="product-price">
+                <span *ngIf="produto.preco_promocional" class="original-price">
+                  {{ formatarPreco(produto.preco) }}
+                </span>
+                <span class="current-price">
+                  {{ formatarPreco(produto.preco_promocional || produto.preco) }}
+                </span>
+              </div>
+
+              <!-- Info (Avaliação e Estoque) -->
+              <div class="product-info">
+              <!-- ✅ SUBSTITUIR -->
+              <span *ngIf="produto.avaliacao">
+                ⭐ {{ formatarAvaliacao(produto.avaliacao) }}
+              </span>
+              <span *ngIf="!produto.avaliacao">
+                ⭐ N/A
+              </span>
+              </div>
+
+              <!-- Score de Relevância -->
+              <div class="product-score" *ngIf="produto.score !== undefined">
+                <div class="score-bar">
+                  <div class="score-fill" [style.width.%]="(produto.score || 0) * 100"></div>
+                </div>
+                <span class="score-text">
+                  {{ produto.score_percentual || ((produto.score || 0) * 100).toFixed(0) + '%' }} relevante
+                </span>
+              </div>
+
+              <!-- Ações -->
+              <div class="product-actions">
+                <button 
+                  class="btn-action btn-details"
+                  (click)="verDetalhes(produto.id)"
+                  title="Ver detalhes">
+                  👁️ Detalhes
+                </button>
+                <button 
+                  class="btn-action btn-cart"
+                  (click)="adicionarAoCarrinho(produto)"
+                  [disabled]="produto.estoque === 0"
+                  title="Adicionar ao carrinho">
+                  🛒 Comprar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -58,6 +198,7 @@
 
     <!-- Loading Indicator -->
     <div *ngIf="isLoading" class="message assistant">
+      <div class="message-avatar">🤖</div>
       <div class="typing-indicator">
         <span></span>
         <span></span>
@@ -66,21 +207,34 @@
     </div>
   </div>
 
-  <!-- Input Area -->
+  <!-- ============================================ -->
+  <!-- INPUT AREA -->
+  <!-- ============================================ -->
   <div class="chat-input-container">
-    <input
-      type="text"
-      class="chat-input"
-      placeholder="Digite sua mensagem..."
-      [(ngModel)]="inputMessage"
-      (keypress)="onKeyPress($event)"
-      [disabled]="isLoading"
-    />
+    <div class="input-wrapper">
+      <textarea
+        class="chat-input"
+        placeholder="Digite sua mensagem... (Enter para enviar)"
+        [(ngModel)]="inputMessage"
+        (keypress)="onKeyPress($event)"
+        [disabled]="isLoading"
+        rows="1"
+        maxlength="500">
+      </textarea>
+      
+      <div class="input-counter" *ngIf="inputMessage.length > 400">
+        {{ inputMessage.length }}/500
+      </div>
+    </div>
+
     <button
       class="send-button"
       (click)="sendMessage()"
-      [disabled]="isLoading || !inputMessage.trim()">
-      {{ isLoading ? '...' : 'Enviar' }}
+      [disabled]="!canSend"
+      [title]="!apiConnected ? 'API desconectada' : 'Enviar mensagem'">
+      <span *ngIf="!isLoading">📤 Enviar</span>
+      <span *ngIf="isLoading">⏳ Enviando...</span>
     </button>
   </div>
 </div>
+ 
