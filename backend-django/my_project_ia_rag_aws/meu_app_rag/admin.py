@@ -1,8 +1,10 @@
 # conhecimento/admin.py
 
-from datetime import timezone
+from django.utils import timezone
 from django.contrib import admin
+from django import forms
 from django.utils.html import format_html
+from django.urls import path
 from .models import KnowledgeBase, Documento
 
 
@@ -38,8 +40,43 @@ class KnowledgeBaseAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Status'
 
 
+class DocumentoForm(forms.ModelForm):
+    tags_input = forms.CharField(
+        label='Tags',
+        required=False,
+        help_text='Separe as tags por vírgula (ex: missa, saude, sexta)',
+        widget=forms.TextInput(attrs={'class': 'vTextField'})
+    )
+
+    class Meta:
+        model = Documento
+        fields = '__all__'
+        exclude = ['tags']  # Esconde o campo JSON original
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.tags:
+            # Converte lista JSON para string separada por vírgula
+            self.fields['tags_input'].initial = ', '.join(self.instance.tags)
+
+    def clean_tags_input(self):
+        data = self.cleaned_data['tags_input']
+        if not data:
+            return []
+        # Converte string de volta para lista
+        return [tag.strip() for tag in data.split(',') if tag.strip()]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.tags = self.cleaned_data['tags_input']
+        if commit:
+            instance.save()
+        return instance
+
+
 @admin.register(Documento)
 class DocumentoAdmin(admin.ModelAdmin):
+    form = DocumentoForm
     list_display = ['base_icon', 'titulo_short', 'categoria', 'status_badge', 'versao', 'validade']
     list_filter = ['base', 'status', 'categoria']
     search_fields = ['titulo', 'conteudo']
@@ -54,7 +91,7 @@ class DocumentoAdmin(admin.ModelAdmin):
             'classes': ('wide',)
         }),
         ('Metadados', {
-            'fields': ('categoria', 'tags', 'autor')
+            'fields': ('categoria', 'tags_input', 'autor')
         }),
         ('Validade', {
             'fields': ('data_inicio', 'data_fim'),
@@ -105,3 +142,53 @@ class DocumentoAdmin(admin.ModelAdmin):
         
         return f'{dias} dias'
     validade.short_description = 'Expira em'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('upload-word/', self.admin_site.admin_view(self.upload_word_view), name='documento_upload_word'),
+        ]
+        return my_urls + urls
+
+    def upload_word_view(self, request):
+        from django.shortcuts import render, redirect
+        from django.contrib import messages
+        from ..models import KnowledgeBase
+        from ..importers.word_importer import WordImporter
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import os
+
+        if request.method == 'POST':
+            file = request.FILES.get('file')
+            base_slug = request.POST.get('base_slug')
+
+            if not file or not base_slug:
+                messages.error(request, 'Por favor, selecione um arquivo e uma base.')
+                return redirect('.')
+
+            # Salva temporariamente
+            temp_path = default_storage.save(
+                f'temp/{file.name}',
+                ContentFile(file.read())
+            )
+            temp_full_path = os.path.join(default_storage.location, temp_path)
+
+            try:
+                importer = WordImporter()
+                doc = importer.processar_word(temp_full_path, base_slug)
+                messages.success(request, f'Documento "{doc.titulo}" importado com sucesso!')
+                return redirect('admin:meu_app_rag_documento_changelist')
+            except Exception as e:
+                messages.error(request, f'Erro ao importar: {str(e)}')
+            finally:
+                if default_storage.exists(temp_path):
+                    default_storage.delete(temp_path)
+
+        bases = KnowledgeBase.objects.filter(ativo=True)
+        context = dict(
+            self.admin_site.each_context(request),
+            bases=bases,
+            title='Importar Word'
+        )
+        return render(request, 'admin/meu_app_rag/documento/upload_word.html', context)

@@ -16,7 +16,7 @@ class KnowledgeBase(models.Model):
     ]
     
     nome = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True)
     descricao = models.TextField()
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     ativo = models.BooleanField(default=True)
@@ -61,7 +61,7 @@ class Documento(models.Model):
     )
     
     titulo = models.CharField(max_length=200)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
     conteudo = models.TextField()
     
     categoria = models.CharField(max_length=100, blank=True)
