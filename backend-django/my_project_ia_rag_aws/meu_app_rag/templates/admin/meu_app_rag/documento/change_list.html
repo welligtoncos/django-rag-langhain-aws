@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+{{ block.super }}
+<li>
+    <a href="upload-word/" class="addlink">
+        Importar Word (.docx)
+    </a>
+</li>
+{% endblock %}

@@ -1,16 +1,13 @@
+# conhecimento/urls.py
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from .views import ChatViewSet, ImportViewSet
 
-# Router para ViewSets
 router = DefaultRouter()
-router.register(r'produtos', views.ProdutoViewSet, basename='produto')
-router.register(r'rag', views.RAGViewSet, basename='rag')
+router.register(r'chat', ChatViewSet, basename='chat')
+router.register(r'import', ImportViewSet, basename='import')
 
 urlpatterns = [
-    # Health check
-    path('health/', views.health_check, name='health_check'),
-    
-    # Rotas dos ViewSets
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
 ]

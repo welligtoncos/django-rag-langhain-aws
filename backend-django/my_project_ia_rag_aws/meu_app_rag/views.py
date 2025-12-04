@@ -1,539 +1,529 @@
-import time
+# conhecimento/views.py
+
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
-from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Count, Avg
-import logging
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.utils import timezone
+from django.db.models import Q, Count, F
+import os
+import time
 
-logger = logging.getLogger(__name__)
-
-from .models import Produto
+# Imports locais (models e serializers)
+from .models import KnowledgeBase, Documento
 from .serializers import (
-    ProdutoSerializer,
-    ProdutoListSerializer,
-    ProdutoMinimalSerializer,
-    ProdutoImagemSerializer,
-    RAGQuerySerializer,
-    RAGResponseSerializer
+    KnowledgeBaseSerializer,
+    DocumentoListSerializer,
+    DocumentoDetailSerializer,
+    DocumentoCreateSerializer,
+    DocumentoUpdateSerializer,
+    ChatQuerySerializer,
+    ChatResponseSerializer,
+    WordUploadSerializer,
+    WordUploadResponseSerializer,
+    EstatisticasSerializer,
+    HealthCheckSerializer
 )
-from .rag.retriever import ProductRetriever
+
+# Imports do módulo RAG
+from .rag.retriever import MultiBaseRetriever
 from .rag.augmenter import ContextAugmenter
-from .rag.generator import ResponseGenerator
+from .rag.generator import ResponseGenerator 
+
+# Imports de importadores
+from .importers.word_importer import WordImporter
 
 
-class StandardResultsSetPagination(PageNumberPagination):
-    """Paginação padrão para listagens"""
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
-
-class ProdutoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para operações CRUD de produtos.
+class KnowledgeBaseViewSet(viewsets.ModelViewSet):
+    """ViewSet para Bases de Conhecimento"""
     
-    Endpoints:
-    - GET /api/rag/produtos/ - Lista todos os produtos
-    - POST /api/rag/produtos/ - Cria novo produto
-    - GET /api/rag/produtos/{id}/ - Detalhe de um produto
-    - PUT /api/rag/produtos/{id}/ - Atualiza produto completo
-    - PATCH /api/rag/produtos/{id}/ - Atualiza produto parcial
-    - DELETE /api/rag/produtos/{id}/ - Remove produto
-    - POST /api/rag/produtos/{id}/imagem/ - Upload de imagem
-    """
+    queryset = KnowledgeBase.objects.all()
+    serializer_class = KnowledgeBaseSerializer
+    lookup_field = 'slug'
     
-    queryset = Produto.objects.all().order_by('-data_cadastro')
-    serializer_class = ProdutoSerializer
-    pagination_class = StandardResultsSetPagination
-    
-    def get_serializer_class(self):
-        """Escolhe serializer baseado na ação"""
-        if self.action == 'list':
-            return ProdutoListSerializer
-        elif self.action == 'imagem':
-            return ProdutoImagemSerializer
-        return ProdutoSerializer
-    
-    def get_serializer_context(self):
-        """
-        Passa request no contexto para construir URLs absolutas de imagens.
-        CRÍTICO para imagem_completa e thumbnail_url funcionarem!
-        """
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-    
-    @extend_schema(
-        description="Lista produtos com filtros e paginação",
-        parameters=[
-            OpenApiParameter(
-                name='categoria',
-                description='Filtrar por categoria (ex: Roupas, Eletrônicos)',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='subcategoria',
-                description='Filtrar por subcategoria',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='marca',
-                description='Filtrar por marca',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='preco_min',
-                description='Preço mínimo',
-                required=False,
-                type=float
-            ),
-            OpenApiParameter(
-                name='preco_max',
-                description='Preço máximo',
-                required=False,
-                type=float
-            ),
-            OpenApiParameter(
-                name='cor',
-                description='Filtrar por cor',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='tamanho',
-                description='Filtrar por tamanho',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='em_estoque',
-                description='Apenas produtos em estoque (true/false)',
-                required=False,
-                type=bool
-            ),
-            OpenApiParameter(
-                name='promocao',
-                description='Apenas produtos em promoção (true/false)',
-                required=False,
-                type=bool
-            ),
-            OpenApiParameter(
-                name='search',
-                description='Busca por nome ou descrição',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='ordenar',
-                description='Ordenação: preco_asc, preco_desc, nome, avaliacao, mais_novo',
-                required=False,
-                type=str
-            ),
-            OpenApiParameter(
-                name='page',
-                description='Número da página',
-                required=False,
-                type=int
-            ),
-            OpenApiParameter(
-                name='page_size',
-                description='Itens por página (max: 100)',
-                required=False,
-                type=int
-            ),
-        ]
-    )
-    def list(self, request, *args, **kwargs):
-        """Lista produtos com filtros avançados"""
-        queryset = self.get_queryset()
+    def get_queryset(self):
+        """Filtra bases"""
+        queryset = super().get_queryset()
         
-        # Filtros básicos
+        # Filtro por tipo
+        tipo = self.request.query_params.get('tipo')
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
+        
+        # Filtro por ativo
+        ativo = self.request.query_params.get('ativo')
+        if ativo is not None:
+            ativo_bool = ativo.lower() in ['true', '1', 'yes']
+            queryset = queryset.filter(ativo=ativo_bool)
+        
+        return queryset
+    
+    @action(detail=True, methods=['get'])
+    def documentos(self, request, slug=None):
+        """Lista documentos de uma base"""
+        base = self.get_object()
+        documentos = base.documentos.all()
+        
+        # Filtros
+        status_param = request.query_params.get('status')
+        if status_param:
+            documentos = documentos.filter(status=status_param)
+        
         categoria = request.query_params.get('categoria')
-        subcategoria = request.query_params.get('subcategoria')
-        marca = request.query_params.get('marca')
-        cor = request.query_params.get('cor')
-        tamanho = request.query_params.get('tamanho')
-        
         if categoria:
-            queryset = queryset.filter(categoria__icontains=categoria)
-        if subcategoria:
-            queryset = queryset.filter(subcategoria__icontains=subcategoria)
-        if marca:
-            queryset = queryset.filter(marca__icontains=marca)
-        if cor:
-            queryset = queryset.filter(cor__icontains=cor)
-        if tamanho:
-            queryset = queryset.filter(tamanho__iexact=tamanho)
+            documentos = documentos.filter(categoria=categoria)
         
-        # Filtros de preço
-        preco_min = request.query_params.get('preco_min')
-        preco_max = request.query_params.get('preco_max')
-        
-        if preco_min:
-            queryset = queryset.filter(preco__gte=float(preco_min))
-        if preco_max:
-            queryset = queryset.filter(preco__lte=float(preco_max))
-        
-        # Filtro de estoque
-        em_estoque = request.query_params.get('em_estoque')
-        if em_estoque and em_estoque.lower() == 'true':
-            queryset = queryset.filter(estoque__gt=0)
-        
-        # Filtro de promoção
-        promocao = request.query_params.get('promocao')
-        if promocao and promocao.lower() == 'true':
-            queryset = queryset.filter(preco_promocional__isnull=False)
-        
-        # Busca textual
-        search = request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(nome__icontains=search) |
-                Q(descricao__icontains=search) |
-                Q(especificacoes__icontains=search)
-            )
-        
-        # Ordenação
-        ordenar = request.query_params.get('ordenar')
-        if ordenar:
-            ordem_map = {
-                'preco_asc': 'preco',
-                'preco_desc': '-preco',
-                'nome': 'nome',
-                'avaliacao': '-avaliacao',
-                'mais_novo': '-data_cadastro',
-                'mais_vendido': '-num_avaliacoes'
-            }
-            if ordenar in ordem_map:
-                queryset = queryset.order_by(ordem_map[ordenar])
-        
-        # Paginação
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = DocumentoListSerializer(documentos, many=True)
         return Response(serializer.data)
     
-    @extend_schema(
-        request=ProdutoImagemSerializer,
-        responses={200: ProdutoImagemSerializer},
-        description="Upload ou atualização de imagem do produto"
-    )
-    @action(detail=True, methods=['post', 'patch'], serializer_class=ProdutoImagemSerializer)
-    def imagem(self, request, pk=None):
-        """
-        Upload ou atualização de imagem.
+    @action(detail=True, methods=['post'])
+    def ativar(self, request, slug=None):
+        """Ativa uma base"""
+        base = self.get_object()
+        base.ativo = True
+        base.save()
         
-        Aceita:
-        - imagem: arquivo (multipart/form-data)
-        - imagem_url: URL externa (application/json)
+        serializer = self.get_serializer(base)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def desativar(self, request, slug=None):
+        """Desativa uma base"""
+        base = self.get_object()
+        base.ativo = False
+        base.save()
         
-        Thumbnail é gerado automaticamente.
-        """
-        produto = self.get_object()
-        serializer = ProdutoImagemSerializer(
-            produto,
-            data=request.data,
-            partial=True,
-            context={'request': request}
+        serializer = self.get_serializer(base)
+        return Response(serializer.data)
+
+
+class DocumentoViewSet(viewsets.ModelViewSet):
+    """ViewSet para Documentos"""
+    
+    queryset = Documento.objects.all()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return DocumentoListSerializer
+        elif self.action == 'create':
+            return DocumentoCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return DocumentoUpdateSerializer
+        return DocumentoDetailSerializer
+    
+    def get_queryset(self):
+        """Filtra documentos"""
+        queryset = super().get_queryset()
+        
+        # Filtro por base
+        base_slug = self.request.query_params.get('base')
+        if base_slug:
+            queryset = queryset.filter(base__slug=base_slug)
+        
+        # Filtro por status
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        
+        # Filtro por categoria
+        categoria = self.request.query_params.get('categoria')
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+        
+        # Filtro: apenas válidos
+        apenas_validos = self.request.query_params.get('apenas_validos')
+        if apenas_validos == 'true':
+            agora = timezone.now()
+            queryset = queryset.filter(
+                Q(status='ativo'),
+                Q(data_inicio__isnull=True) | Q(data_inicio__lte=agora),
+                Q(data_fim__isnull=True) | Q(data_fim__gte=agora)
+            )
+        
+        return queryset
+    
+    @action(detail=True, methods=['get'])
+    def historico(self, request, pk=None):
+        """Retorna histórico de versões"""
+        doc_atual = self.get_object()
+        
+        # Busca todas versões
+        versoes = [doc_atual]
+        doc = doc_atual
+        
+        while doc.documento_anterior:
+            doc = doc.documento_anterior
+            versoes.append(doc)
+        
+        versoes.reverse()
+        
+        serializer = DocumentoListSerializer(versoes, many=True)
+        return Response({
+            'total_versoes': len(versoes),
+            'versao_atual': doc_atual.versao,
+            'versoes': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def restaurar_versao(self, request, pk=None):
+        """Restaura uma versão anterior"""
+        doc_atual = self.get_object()
+        versao_desejada = request.data.get('versao')
+        
+        if not versao_desejada:
+            return Response(
+                {'error': 'Versão não especificada'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Busca versão
+        doc = doc_atual
+        while doc and doc.versao != int(versao_desejada):
+            doc = doc.documento_anterior
+        
+        if not doc:
+            return Response(
+                {'error': f'Versão {versao_desejada} não encontrada'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Cria nova versão com conteúdo antigo
+        manager = KnowledgeManager()
+        
+        novo_doc = manager.atualizar_documento(
+            documento_id=doc_atual.id,
+            titulo=doc.titulo,
+            conteudo=doc.conteudo,
+            categoria=doc.categoria,
+            tags=doc.tags
         )
         
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = DocumentoDetailSerializer(novo_doc)
+        return Response({
+            'message': f'Versão {versao_desejada} restaurada como v{novo_doc.versao}',
+            'documento': serializer.data
+        })
     
-    @extend_schema(
-        description="Estatísticas gerais dos produtos"
-    )
-    @action(detail=False, methods=['get'])
-    def estatisticas(self, request):
-        """Retorna estatísticas do catálogo de produtos"""
-        from django.db.models import Min, Max, Avg
+    @action(detail=True, methods=['post'])
+    def regenerar_embedding(self, request, pk=None):
+        """Regenera embedding do documento"""
+        doc = self.get_object()
         
-        stats = {
-            'total_produtos': Produto.objects.count(),
-            'produtos_em_estoque': Produto.objects.filter(estoque__gt=0).count(),
-            'produtos_em_promocao': Produto.objects.filter(preco_promocional__isnull=False).count(),
-            'produtos_com_imagem': Produto.objects.exclude(
-                Q(imagem='') & Q(imagem_url__isnull=True)
-            ).count(),
-            'preco_medio': Produto.objects.aggregate(Avg('preco'))['preco__avg'],
-            'preco_min': Produto.objects.aggregate(Min('preco'))['preco__min'],
-            'preco_max': Produto.objects.aggregate(Max('preco'))['preco__max'],
-            'avaliacao_media': Produto.objects.aggregate(Avg('avaliacao'))['avaliacao__avg'],
-            'categorias': list(
-                Produto.objects.values('categoria')
-                .annotate(total=Count('id'))
-                .order_by('-total')
-            ),
-            'marcas_top': list(
-                Produto.objects.values('marca')
-                .annotate(total=Count('id'))
-                .order_by('-total')[:10]
-            )
-        }
+        # CORRIGIDO: Import já está no topo do arquivo
+        manager = KnowledgeManager()
+        manager._gerar_embedding_documento(doc)
         
-        return Response(stats)
+        # CORRIGIDO: Método correto
+        serializer = self.get_serializer(doc)
+        return Response({
+            'message': 'Embedding regenerado',
+            'documento': serializer.data
+        })
+    
+    @action(detail=False, methods=['post'])
+    def regenerar_todos_embeddings(self, request):
+        """Regenera embeddings de todos documentos ativos"""
+        base_slug = request.data.get('base_slug')
+        
+        manager = KnowledgeManager()
+        
+        if base_slug:
+            try:
+                base = KnowledgeBase.objects.get(slug=base_slug)
+                queryset = Documento.objects.filter(base=base, status='ativo')
+            except KnowledgeBase.DoesNotExist:
+                return Response(
+                    {'error': f'Base {base_slug} não encontrada'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            queryset = Documento.objects.filter(status='ativo')
+        
+        total = queryset.count()
+        
+        for doc in queryset:
+            manager._gerar_embedding_documento(doc)
+        
+        return Response({
+            'message': f'{total} embeddings regenerados',
+            'total': total
+        })
 
 
-class RAGViewSet(viewsets.ViewSet):
-    """
-    ViewSet para consultas RAG (Retrieval-Augmented Generation).
+class ChatViewSet(viewsets.ViewSet):
+    """Endpoint principal do chatbot"""
     
-    Sistema de busca inteligente que usa embeddings e LLM para 
-    responder perguntas em linguagem natural sobre o catálogo.
-    """
+    parser_classes = [JSONParser]
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        try:
-            self.retriever = ProductRetriever()
-            self.augmenter = ContextAugmenter()
-            self.generator = ResponseGenerator()
-        except ImproperlyConfigured as e:
-            self.retriever = None
-            self.error_message = str(e)
-    
-    @extend_schema(
-        request=RAGQuerySerializer,
-        responses={200: RAGResponseSerializer},
-        description="Consulta inteligente no catálogo usando linguagem natural",
-        examples=[
-            OpenApiExample(
-                'Busca simples',
-                summary='Busca por produto',
-                value={'query': 'Quero uma camiseta branca', 'limit': 5}
-            ),
-            OpenApiExample(
-                'Busca por preço',
-                summary='Com restrição de preço',
-                value={'query': 'Tênis até 200 reais', 'limit': 3}
-            ),
-            OpenApiExample(
-                'Busca específica',
-                summary='Com características',
-                value={'query': 'Perfume masculino amadeirado', 'limit': 5}
-            ),
-        ]
-    )
     @action(detail=False, methods=['post'])
     def query(self, request):
         """
-        Endpoint principal para consultas RAG.
+        Consulta RAG completa
+        
+        POST /api/chat/query/
+        Body: {
+            "query": "Como faço para batizar?",
+            "bases": ["secretaria"],
+            "limit": 5,
+            "min_score": 0.0,
+            "incluir_documentos": true
+        }
         """
-        if not self.retriever:
-            return Response(
-                {
-                    'error': 'Serviço RAG indisponível',
-                    'detalhe': self.error_message
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+        # Valida entrada
+        serializer = ChatQuerySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
-        serializer = RAGQuerySerializer(data=request.data)
-        if not serializer.is_valid():
-            logger.error(f"Erro de validação: {serializer.errors}")
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        dados = serializer.validated_data
+        inicio = time.time()
         
-        query_text = serializer.validated_data['query']
-        limit = serializer.validated_data.get('limit', 5)
+        # 1. Retrieval
+        retriever = MultiBaseRetriever()
+        documentos = retriever.retrieve(
+            query=dados['query'],
+            bases=dados.get('bases'),
+            limit=dados['limit'],
+            min_score=dados['min_score']
+        )
         
-        logger.info(f"📝 Nova consulta RAG: '{query_text}' (limit={limit})")
-        
-        # Medir tempo de processamento
-        start_time = time.time()
-        
-        try:
-            # 1. Buscar produtos relevantes (retrieval)
-            logger.info("🔍 Buscando produtos...")
-            produtos = self.retriever.retrieve(query_text, limit=limit)
-            logger.info(f"✅ {len(produtos)} produtos encontrados")
-            
-            # 2. Gerar contexto (augmentation)
-            logger.info("📝 Gerando contexto...")
-            contexto = self.augmenter.augment(produtos, query_text)
-            
-            # 3. Gerar resposta (generation)
-            logger.info("🤖 Gerando resposta com LLM...")
-            resposta = self.generator.generate(query_text, contexto)
-            logger.info("✅ Resposta gerada")
-            
-            tempo_processamento = time.time() - start_time
-            
-            # Serializar produtos com contexto de request (para URLs de imagens)
-            produtos_serializados = ProdutoMinimalSerializer(
-                produtos,
-                many=True,
-                context={'request': request}
-            ).data
-            
+        if not documentos:
             response_data = {
-                'query': query_text,
-                'resposta': resposta,
-                'produtos_encontrados': len(produtos),
-                'produtos': produtos_serializados,
-                'tempo_processamento': round(tempo_processamento, 3)
+                'query': dados['query'],
+                'resposta': 'Desculpe, não encontrei informações sobre isso no momento. Pode reformular sua pergunta ou entrar em contato com a secretaria.',
+                'documentos_encontrados': 0,
+                'documentos': [],
+                'tempo_processamento': round(time.time() - inicio, 3)
             }
             
-            logger.info(f"✅ Consulta processada em {tempo_processamento:.3f}s")
-            
-            return Response(response_data)
-            
-        except Exception as e:
-            logger.error(f"❌ Erro ao processar consulta: {str(e)}", exc_info=True)
-            return Response(
-                {
-                    'error': 'Erro ao processar consulta',
-                    'detalhe': str(e)
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            response_serializer = ChatResponseSerializer(response_data)
+            return Response(response_serializer.data)
+        
+        # 2. Augmentation
+        augmenter = ContextAugmenter()
+        contexto = augmenter.augment(dados['query'], documentos)
+        
+        # 3. Generation
+        generator = ResponseGenerator()
+        resposta = generator.generate(contexto, dados['query'])
+        
+        tempo_total = time.time() - inicio
+        
+        # Monta resposta
+        response_data = {
+            'query': dados['query'],
+            'resposta': resposta,
+            'documentos_encontrados': len(documentos),
+            'tempo_processamento': round(tempo_total, 3)
+        }
+        
+        # Inclui documentos se solicitado
+        if dados.get('incluir_documentos', True):
+            response_data['documentos'] = documentos
+        
+        response_serializer = ChatResponseSerializer(response_data)
+        return Response(response_serializer.data)
     
-    @extend_schema(
-        description="Busca produtos por similaridade vetorial (sem geração de texto)",
-        parameters=[
-            OpenApiParameter(
-                name='q',
-                description='Texto da busca',
-                required=True,
-                type=str
-            ),
-            OpenApiParameter(
-                name='limit',
-                description='Número de resultados (1-20)',
-                required=False,
-                type=int
-            ),
-        ]
-    )
     @action(detail=False, methods=['get'])
-    def search(self, request):
+    def bases_disponiveis(self, request):
+        """Lista bases disponíveis para consulta"""
+        bases = KnowledgeBase.objects.filter(ativo=True)
+        serializer = KnowledgeBaseSerializer(bases, many=True)
+        return Response(serializer.data)
+
+
+class ImportViewSet(viewsets.ViewSet):
+    """Endpoints de importação"""
+    
+    parser_classes = [MultiPartParser, FormParser]
+    
+    @action(detail=False, methods=['post'], url_path='upload-word')
+    def upload_word(self, request):
         """
-        Busca vetorial simples (sem geração de resposta).
+        Upload de arquivo Word
         
-        Retorna apenas os produtos mais similares ao texto da busca.
-        Mais rápido que /query/ pois não gera resposta com LLM.
+        POST /api/import/upload-word/
+        Body (form-data):
+        - file: arquivo .docx
+        - base_slug: slug da base
+        - categoria: categoria (opcional)
+        - tags: tags adicionais (opcional)
+        - gerar_embedding: true/false (opcional)
         """
-        if not self.retriever:
-            return Response(
-                {'error': 'Serviço RAG indisponível'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+        # Valida entrada
+        serializer = WordUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
-        query_text = request.query_params.get('q', '').strip()
-        limit = int(request.query_params.get('limit', 5))
+        dados = serializer.validated_data
+        arquivo = dados['file']
         
-        if not query_text:
-            return Response(
-                {'error': 'Parâmetro "q" é obrigatório'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Salva temporariamente
+        temp_path = default_storage.save(
+            f'temp/{arquivo.name}',
+            ContentFile(arquivo.read())
+        )
         
-        if limit < 1 or limit > 20:
-            return Response(
-                {'error': 'Limit deve estar entre 1 e 20'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        temp_full_path = os.path.join(
+            default_storage.location,
+            temp_path
+        )
         
         try:
-            start_time = time.time()
-            produtos = self.retriever.retrieve(query_text, limit=limit)
-            tempo_processamento = time.time() - start_time
+            # Processa arquivo
+            importer = WordImporter()
+            documento = importer.processar_word(
+                temp_full_path,
+                dados['base_slug']
+            )
             
-            # Serializar com contexto para URLs de imagens
-            produtos_serializados = ProdutoMinimalSerializer(
-                produtos,
-                many=True,
-                context={'request': request}
-            ).data
+            # Sobrescreve categoria/tags se fornecidos
+            atualizado = False
+            if dados.get('categoria'):
+                documento.categoria = dados['categoria']
+                atualizado = True
+            
+            if dados.get('tags'):
+                documento.tags.extend(dados['tags'])
+                atualizado = True
+            
+            if atualizado:
+                documento.save()
+            
+            # Remove arquivo temporário
+            default_storage.delete(temp_path)
+            
+            # Monta resposta
+            response_data = {
+                'success': True,
+                'message': 'Documento importado com sucesso!',
+                'documento': {
+                    'id': documento.id,
+                    'titulo': documento.titulo,
+                    'categoria': documento.categoria,
+                    'tags': documento.tags,
+                    'base': documento.base.nome,
+                    'status': documento.status,
+                    'embedding_gerado': documento.embedding is not None
+                }
+            }
+            
+            response_serializer = WordUploadResponseSerializer(response_data)
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except Exception as e:
+            # Remove arquivo temporário em caso de erro
+            if default_storage.exists(temp_path):
+                default_storage.delete(temp_path)
             
             return Response({
-                'query': query_text,
-                'total': len(produtos),
-                'produtos': produtos_serializados,
-                'tempo_processamento': round(tempo_processamento, 3)
-            })
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+                'success': False,
+                'error': 'Erro ao processar documento',
+                'detalhes': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class HealthViewSet(viewsets.ViewSet):
+    """Endpoints de monitoramento"""
     
-    @extend_schema(description="Estatísticas do sistema RAG")
     @action(detail=False, methods=['get'])
-    def stats(self, request):
-        """
-        Retorna estatísticas do sistema RAG:
-        - Total de produtos
-        - Embeddings gerados
-        - Dimensão dos vetores
-        - Categorias disponíveis
-        """
-        if not self.retriever:
-            return Response(
-                {'error': 'Serviço RAG indisponível'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+    def check(self, request):
+        """Health check do sistema"""
         
+        # Testa database
         try:
-            stats = self.retriever.get_statistics()
-            return Response(stats)
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-@extend_schema(
-    description="Health check - Verifica se a API está funcionando",
-    responses={200: {'description': 'API operacional'}}
-)
-@api_view(['GET'])
-def health_check(request):
-    """
-    Health check endpoint.
+            KnowledgeBase.objects.count()
+            db_ok = True
+        except:
+            db_ok = False
+        
+        # Testa AWS Bedrock
+        try:
+            from .rag.embeddings import Embeddings
+            embeddings = Embeddings()
+            embeddings.embed("teste")
+            bedrock_ok = True
+        except:
+            bedrock_ok = False
+        
+        # Conta embeddings
+        embeddings_count = Documento.objects.filter(
+            embedding__isnull=False
+        ).count()
+        
+        health_data = {
+            'status': 'ok' if (db_ok and bedrock_ok) else 'error',
+            'timestamp': timezone.now(),
+            'database': db_ok,
+            'aws_bedrock': bedrock_ok,
+            'embeddings_disponiveis': embeddings_count,
+            'versao': '1.0.0'
+        }
+        
+        serializer = HealthCheckSerializer(health_data)
+        
+        status_code = (
+            status.HTTP_200_OK 
+            if health_data['status'] == 'ok' 
+            else status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        
+        return Response(serializer.data, status=status_code)
     
-    Retorna status da API e serviços conectados.
-    """
-    from django.db import connection
-    
-    # Testar conexão com banco
-    try:
-        connection.ensure_connection()
-        db_status = 'ok'
-    except Exception as e:
-        db_status = f'error: {str(e)}'
-    
-    # Testar serviço RAG
-    try:
-        retriever = ProductRetriever()
-        rag_status = 'ok'
-        rag_produtos = retriever.get_statistics().get('total_produtos', 0)
-    except Exception as e:
-        rag_status = f'error: {str(e)}'
-        rag_produtos = 0
-    
-    return Response({
-        'status': 'ok',
-        'message': 'API RAG funcionando!',
-        'version': '1.0.0',
-        'services': {
-            'database': db_status,
-            'rag': rag_status
-        },
-        'produtos_catalogados': rag_produtos
-    })
+    @action(detail=False, methods=['get'])
+    def estatisticas(self, request):
+        """Estatísticas gerais do sistema"""
+        
+        # Conta tudo
+        total_bases = KnowledgeBase.objects.count()
+        bases_ativas = KnowledgeBase.objects.filter(ativo=True).count()
+        total_docs = Documento.objects.count()
+        docs_ativos = Documento.objects.filter(status='ativo').count()
+        
+        # Docs por base
+        docs_por_base = dict(
+            Documento.objects.filter(status='ativo')
+            .values('base__nome')
+            .annotate(count=Count('id'))
+            .values_list('base__nome', 'count')
+        )
+        
+        # Docs por status
+        docs_por_status = dict(
+            Documento.objects.values('status')
+            .annotate(count=Count('id'))
+            .values_list('status', 'count')
+        )
+        
+        # Próximos a expirar (7 dias)
+        from datetime import timedelta
+        agora = timezone.now()
+        proximos_expirar = Documento.objects.filter(
+            status='ativo',
+            data_fim__isnull=False,
+            data_fim__lte=agora + timedelta(days=7),
+            data_fim__gte=agora
+        ).count()
+        
+        # Sem embedding
+        sem_embedding = Documento.objects.filter(
+            status='ativo',
+            embedding__isnull=True
+        ).count()
+        
+        stats_data = {
+            'total_bases': total_bases,
+            'bases_ativas': bases_ativas,
+            'total_documentos': total_docs,
+            'documentos_ativos': docs_ativos,
+            'documentos_por_base': docs_por_base,
+            'documentos_por_status': docs_por_status,
+            'proximos_a_expirar': proximos_expirar,
+            'sem_embedding': sem_embedding
+        }
+        
+        serializer = EstatisticasSerializer(stats_data)
+        return Response(serializer.data)
+ 
